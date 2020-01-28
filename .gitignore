@@ -54,3 +54,6 @@ stage2_dataset
 *.ipynb
 features/
 *.vec
+*.ini
+*.ddm
+moviedata/
