@@ -110,7 +110,7 @@ class UserSpider:
 if __name__ == '__main__':
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        UserSpider().get_all_movies("146984937")
+        UserSpider().get_all_movies("test")
 
 
 

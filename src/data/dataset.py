@@ -127,6 +127,15 @@ class Movies:
         new_to_org = dict(zip(range(len(movies)), movies))
         return org_to_new, new_to_org
 
+    @staticmethod
+    def index_to_movies(indexes):
+        movies = Movies().read_movies()
+        movies = movies.set_index('MOVIE_ID')
+
+        reverse_dict = Movies().get_movie_id_dict()[1]
+        indexes = [reverse_dict[i] for i in indexes]
+        return movies.loc[indexes]
+
 
 if __name__ == '__main__':
     print(read_data(DataPath().users))

@@ -2,7 +2,7 @@ from sklearn.decomposition import NMF
 from sklearn.model_selection import train_test_split
 
 from src.config.configs import TrainParam, NMFParam
-from src.data.dataset import Rating, save_tmp_data, read_data, read_tmp_data
+from src.data.dataset import Rating, save_tmp_data, read_tmp_data
 
 
 class BayesianSVD:
@@ -41,7 +41,7 @@ class SKLNMF:
     def save_model(self):
         save_tmp_data(self.model, self.train_param.model_name)
 
-    def load_model(self):
+    def load_model(self) -> NMF:
         self.model = read_tmp_data(self.train_param.model_name)
         return self.model
 
