@@ -46,4 +46,4 @@ class Recommendation:
 
 if __name__ == '__main__':
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        print(Recommendation.nmf_recommend("146984937", 20))
+        print(Recommendation.nmf_recommend("test", 20))
