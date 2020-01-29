@@ -43,10 +43,11 @@ class SKLNMF:
 
     def load_model(self):
         self.model = read_tmp_data(self.train_param.model_name)
+        return self.model
 
 
 if __name__ == '__main__':
-    model = SKLNMF(train_param=NMFParam(max_iter=20))
+    model = SKLNMF(train_param=NMFParam(max_iter=3000))
     model.train()
     model.save_model()
     model.load_model()

@@ -88,6 +88,9 @@ class Rating:
         rating["USER_MD5"] = rating["USER_MD5"].map(user_map)
         rating["MOVIE_ID"] = rating["MOVIE_ID"].map(movie_map)
 
+        # drop rating that not included in the dictionary
+        rating = rating.dropna()
+
         rating_matrix = coo_matrix((rating["RATING"], (rating["USER_MD5"], rating["MOVIE_ID"])),
                                    shape=(len(set(rating["USER_MD5"])), len(movie_map.values())))
         return rating_matrix
