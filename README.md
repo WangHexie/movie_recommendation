@@ -4,4 +4,5 @@
 
 ### TODO:
 - [ ] if average rating is equal to the real rating    
+- [ ] evaluation  
   

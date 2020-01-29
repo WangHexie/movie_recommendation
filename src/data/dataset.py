@@ -12,11 +12,12 @@ def root_dir():
     return Path(os.path.abspath(os.path.dirname(__file__))).parent.parent
 
 
-def read_data(path: tuple):
+def read_data(path: list):
     return pd.read_csv(os.path.join(root_dir(), "data", *path))
 
 
 def save_tmp_data(data, path):
+    os.makedirs(os.path.join(root_dir(), "models", *path[:-2]), exist_ok=True)
     with open(os.path.join(root_dir(), "models", *path), "wb") as f:
         pickle.dump(data, f)
 
@@ -32,8 +33,11 @@ class Rating:
         self.tmp_var_path = tmp_var_path
         self.data_path = data_path
 
+    def read_rating(self):
+        return read_data(self.data_path.rating)
+
     def output_dataset(self):
-        rating = read_data(self.data_path.rating)
+        rating = self.read_rating()
         rating = self.delete_useless_rating(rating)
         rating = self.normalize_rating(rating)
         rating_matrix = self.transform_into_sparse_matrix(rating)
@@ -65,6 +69,7 @@ class Rating:
         maxes = grouper.transform('max')
         mins = grouper.transform('min')
         result = rating.assign(RATING=(rating.RATING - mins) / (maxes - mins))
+        result = result.fillna(0.5)
         return result
 
     @staticmethod
@@ -84,7 +89,7 @@ class Rating:
         rating["MOVIE_ID"] = rating["MOVIE_ID"].map(movie_map)
 
         rating_matrix = coo_matrix((rating["RATING"], (rating["USER_MD5"], rating["MOVIE_ID"])),
-                                   shape=(len(set(rating["USER_MD5"])), len(movie_map.keys())))
+                                   shape=(len(set(rating["USER_MD5"])), len(movie_map.values())))
         return rating_matrix
 
 
@@ -97,8 +102,10 @@ class Movies:
         return read_data(self.data_path.movies)
 
     def get_movie_id_dict(self):
-        if not os.path.exists(os.path.join(root_dir(), "data", *self.tmp_var_path.movie_id_dict)):
-            movie_id_dict = Movies().transform_movie_id_to_num(Movies().read_movies())
+        # hard-code rewrite
+        if not os.path.exists(os.path.join(root_dir(), "models", *self.tmp_var_path.movie_id_dict)):
+            # lack some movie data, so use rating data in temporary
+            movie_id_dict = Movies().transform_movie_id_to_num(Rating().read_rating())
             save_tmp_data(movie_id_dict, self.tmp_var_path.movie_id_dict)
         else:
             movie_id_dict = read_tmp_data(self.tmp_var_path.movie_id_dict)
