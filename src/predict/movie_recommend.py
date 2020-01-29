@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from src.crawler.user_info import UserSpider
 from src.data.dataset import Rating, Movies
@@ -44,4 +45,5 @@ class Recommendation:
 
 
 if __name__ == '__main__':
-    print(Recommendation.nmf_recommend("test", 20))
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        print(Recommendation.nmf_recommend("146984937", 20))
