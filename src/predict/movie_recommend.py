@@ -31,7 +31,13 @@ class Recommendation:
         indexes = result.argsort()[::-1]
         indexes = Recommendation.remove_watched_movie(rating_matrix, indexes)
 
-        movies = Movies.index_to_movies(indexes[:num_of_recommend])
+        if fake_load:
+            reverse_dict = Movies().get_id_dict()[1]
+            indexes = [reverse_dict[i] for i in indexes]
+            movies = indexes[:num_of_recommend]
+        else:
+
+            movies = Movies.index_to_movies(indexes[:num_of_recommend])
         return movies
 
     @staticmethod
