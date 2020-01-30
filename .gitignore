@@ -57,3 +57,4 @@ features/
 *.ini
 *.ddm
 moviedata/
+src/server

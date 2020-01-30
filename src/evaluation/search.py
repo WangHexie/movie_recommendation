@@ -12,7 +12,7 @@ class Search:
         neigh.fit(movies_embedding)
 
         m = Movies()
-        movies = np.array(list(m.get_movie_id_dict()[0].keys()))
+        movies = np.array(list(m.get_id_dict()[0].keys()))
         index_of_movie = list(movies).index(movie_id)
 
         indexes = neigh.kneighbors(movies_embedding[index_of_movie].reshape((1, -1)), movie_num)[1][0]

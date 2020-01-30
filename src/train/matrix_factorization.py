@@ -21,8 +21,9 @@ class SKLNMF:
         self.train_param = train_param
         self.model = None
 
-    def train(self):
-        rating_matrix = Rating().output_dataset()
+    def train(self, rating_matrix=None):
+        if rating_matrix is None:
+            Rating().output_dataset()
         # train, test = train_test_split(rating_matrix, test_size=size, train_size=size)
         model = NMF(n_components=self.train_param.n_components,
                     init=self.train_param.init,
@@ -32,8 +33,9 @@ class SKLNMF:
                     alpha=self.train_param.alpha,
                     l1_ratio=self.train_param.l1_ratio,
                     max_iter=self.train_param.max_iter)
-        model.fit_transform(rating_matrix)
+        w = model.fit_transform(rating_matrix)
         self.model = model
+        return w
 
     def get_movie_embedding(self):
         return self.model.components_.T
@@ -47,7 +49,7 @@ class SKLNMF:
 
 
 if __name__ == '__main__':
-    model = SKLNMF(train_param=NMFParam(max_iter=3000))
-    model.train()
-    model.save_model()
-    model.load_model()
+    m = SKLNMF(train_param=NMFParam(max_iter=3000))
+    m.train()
+    m.save_model()
+    m.load_model()

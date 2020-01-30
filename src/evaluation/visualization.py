@@ -43,7 +43,7 @@ class TSNEVisual:
         movie_profile = Movies().read_movies()
         movie_profile = movie_profile.set_index('MOVIE_ID')
 
-        movies = list(Movies().get_movie_id_dict()[0].keys())
+        movies = list(Movies().get_id_dict()[0].keys())
         movies_types = movie_profile.loc[list(movies)]["GENRES"].map(
             lambda x: x.split("/")[0] if not isinstance(x, float) else "nan").values
         return movies_types
