@@ -8,10 +8,20 @@ from src.train.matrix_factorization import SKLNMF
 
 class Recommendation:
     @staticmethod
-    def nmf_recommend(user_id, num_of_recommend=20):
+    def nmf_recommend(user_id, num_of_recommend=20, fake_load=False):
+        """
+
+        :param user_id:
+        :param num_of_recommend:
+        :param fake_load: server use only
+        :return:
+        """
         rating_matrix = Recommendation.user_id_to_matrix(user_id)
         model = SKLNMF()
-        model = model.load_model()
+        if fake_load:
+            model = model.fake_load_model()
+        else:
+            model = model.load_model()
 
         usre_embedding = model.transform(rating_matrix)
         movies_embedding = model.components_
