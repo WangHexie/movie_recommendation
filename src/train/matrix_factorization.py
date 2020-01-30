@@ -1,6 +1,6 @@
 from sklearn.decomposition import NMF
 from sklearn.model_selection import train_test_split
-
+import numpy as np
 from src.config.configs import TrainParam, NMFParam
 from src.data.dataset import Rating, save_tmp_data, read_tmp_data
 
@@ -47,9 +47,30 @@ class SKLNMF:
         self.model = read_tmp_data(self.train_param.model_name)
         return self.model
 
+    # ONLY for the SERVER!!!!!
+    def save_components(self):
+        np.savez("components", self.model.components_)
+
+    def load_components(self):
+        self.model.components_ = np.load("components.npz")
+
+    def fake_load_model(self):
+        model = NMF(n_components=self.train_param.n_components,
+                    init=self.train_param.init,
+                    random_state=self.train_param.random_state,
+                    verbose=self.train_param.verbose,
+                    solver=self.train_param.solver,
+                    alpha=self.train_param.alpha,
+                    l1_ratio=self.train_param.l1_ratio,
+                    max_iter=self.train_param.max_iter)
+        self.model = model
+        self.load_components()
+        return self.model
+
 
 if __name__ == '__main__':
     m = SKLNMF(train_param=NMFParam(max_iter=3000))
-    m.train()
-    m.save_model()
-    m.load_model()
+    # m.train()
+    # m.save_model()
+    # m.load_model()
+    m.fake_load_model()
