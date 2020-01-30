@@ -1,8 +1,10 @@
+import os
+
 from sklearn.decomposition import NMF
 from sklearn.model_selection import train_test_split
 import numpy as np
 from src.config.configs import TrainParam, NMFParam
-from src.data.dataset import Rating, save_tmp_data, read_tmp_data
+from src.data.dataset import Rating, save_tmp_data, read_tmp_data, root_dir
 
 
 class BayesianSVD:
@@ -49,10 +51,10 @@ class SKLNMF:
 
     # ONLY for the SERVER!!!!!
     def save_components(self):
-        np.savez("components", self.model.components_)
+        np.savez(os.path.join(root_dir(), "models", "components"), x=self.model.components_)
 
     def load_components(self):
-        self.model.components_ = np.load("components.npz")
+        self.model.components_ = np.load(os.path.join(root_dir(), "models", "components.npz"))["x"]
 
     def fake_load_model(self):
         model = NMF(n_components=self.train_param.n_components,
@@ -64,6 +66,7 @@ class SKLNMF:
                     l1_ratio=self.train_param.l1_ratio,
                     max_iter=self.train_param.max_iter)
         self.model = model
+        self.model.n_components_ = self.train_param.n_components
         self.load_components()
         return self.model
 
@@ -72,5 +75,6 @@ if __name__ == '__main__':
     m = SKLNMF(train_param=NMFParam(max_iter=3000))
     # m.train()
     # m.save_model()
-    # m.load_model()
+    m.load_model()
+    m.save_components()
     m.fake_load_model()

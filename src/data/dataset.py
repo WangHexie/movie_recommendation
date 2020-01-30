@@ -92,7 +92,7 @@ class Rating:
         user_map = User().get_id_dict()[0]
         movie_map = Movies().get_id_dict()[0]
 
-        rating["USER_MD5"] = rating["USER_MD5"].map(user_map)
+        rating["USER_MD5"] = rating["USER_MD5"].map(user_map).fillna(0)  # in recommendation.not real id.have to fillna
         rating["MOVIE_ID"] = rating["MOVIE_ID"].map(movie_map)
 
         # drop rating that not included in the dictionary
@@ -114,8 +114,12 @@ class Rating:
         user_map = User().get_id_dict()[0]
         movie_map = Movies().get_id_dict()[0]
 
+        print(rating)
+        print(rating["USER_MD5"])
+        print(rating["USER_MD5"].max())
+
         rating_matrix = coo_matrix((rating["RATING"], (rating["USER_MD5"], rating["MOVIE_ID"])),
-                                   shape=(len(user_map.values()), len(movie_map.values())))
+                                   shape=(int(rating["USER_MD5"].max()+1), len(movie_map.values())))
         return rating_matrix
 
 

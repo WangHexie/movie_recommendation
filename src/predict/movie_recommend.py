@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pandas as pd
 
@@ -19,14 +21,18 @@ class Recommendation:
         rating_matrix = Recommendation.user_id_to_matrix(user_id)
         model = SKLNMF()
         if fake_load:
+            print("fake loading")
             model = model.fake_load_model()
+            print("fake loaded")
         else:
             model = model.load_model()
 
-        usre_embedding = model.transform(rating_matrix)
+        user_embedding = model.transform(rating_matrix)
         movies_embedding = model.components_
 
-        result = np.matmul(usre_embedding, movies_embedding)[0]
+        print(user_embedding.shape, movies_embedding.shape)
+
+        result = np.matmul(user_embedding, movies_embedding)[0]
 
         indexes = result.argsort()[::-1]
         indexes = Recommendation.remove_watched_movie(rating_matrix, indexes)
@@ -50,9 +56,12 @@ class Recommendation:
     @staticmethod
     def user_id_to_matrix(user_id):
         movies = UserSpider().get_all_movies(user_id)
-        movies = movies.dropna()
-        movies["RATING"] = movies["RATING"].map(lambda x: int(x[6]))
+        map_dict = dict(zip(["rating{}-t".format(i) for i in range(1, 6)], range(5)))
+
+        movies["RATING"] = movies["RATING"].map(map_dict)
         movies["USER_MD5"] = np.zeros(len(movies))
+
+        movies = movies.dropna()
 
         r = Rating()
         rating = r.normalize_rating(movies)

@@ -34,7 +34,7 @@ class Evaluation:
     def model_evaluate():
         train_data, test_data = Evaluation.split_train_test(Rating().read_rating())
 
-        model = SKLNMF(NMFParam(max_iter=3000, model_name=("NMF_evaluate.model",)))
+        model = SKLNMF(NMFParam(max_iter=2000, model_name=("NMF_evaluate.model",)))
 
         matrix = Rating.dataframe_to_sparse_matrix(train_data)
 
