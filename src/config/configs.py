@@ -30,3 +30,6 @@ class DataPath:
 class TmpVarPath:
     movie_id_dict: tuple = ("movie_id_dict.pk",)
     user_id_dict: tuple = ("user_id.pk",)
+
+
+evaluate_config = NMFParam(max_iter=1, model_name=("NMF_evaluate.model",))

@@ -1,21 +1,43 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from numpy.random import shuffle
 from sklearn.manifold import TSNE
 
 from src.data.dataset import Movies, Rating
 from src.train.matrix_factorization import SKLNMF
-import seaborn as sns
-import pandas as pd
-import matplotlib.pyplot as plt
+
+
+def shuffle_sparse_matrix(matrix):
+    index = np.arange(np.shape(matrix)[0])
+    np.random.shuffle(index)
+    return matrix[index, :]
+
 
 class TSNEVisual:
 
-    def sklnmf_visualization(self):
-        vasualization_num = 10000
+    def sklnmf_visualization(self, visualize_mode=0, drop_threshold=2):
+        """
+
+        :param drop_threshold:
+        :param visualize_mode: 0:visualize movie vectors. 1: visualize user vectors
+        :return:
+        """
+        visualization_num = 10000
 
         model = SKLNMF().load_model()
-        full_data = Rating().output_dataset().tocsr()[:vasualization_num]
-        genres = self.get_movie_genres()[:vasualization_num]
 
-        x = model.transform(full_data)
+        if visualize_mode == 0:
+            x = model.components_.T[:visualization_num]
+            print(x.shape)
+
+        if visualize_mode == 1:
+            full_data = shuffle_sparse_matrix(Rating().output_dataset(drop_threshold).tocsr())[:visualization_num]
+            x = model.transform(full_data)
+
+        genres = self.get_movie_genres()[:visualization_num]
+
         x_embedded = self.tsne_lower_dimension(x)
         self.visualization(x_embedded, genres)
 
@@ -26,7 +48,6 @@ class TSNEVisual:
 
     @staticmethod
     def visualization(x_embedded, genres):
-
         ts_data = pd.DataFrame(data=x_embedded, columns=["x", "y"])
         ts_data["label"] = genres
         sns.set_style("darkgrid", {"font.sans-serif": ['simhei', 'Arial']})
@@ -50,4 +71,4 @@ class TSNEVisual:
 
 
 if __name__ == '__main__':
-    TSNEVisual().sklnmf_visualization()
+    TSNEVisual().sklnmf_visualization(visualize_mode=0, drop_threshold=2)

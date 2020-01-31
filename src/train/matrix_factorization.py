@@ -25,7 +25,7 @@ class SKLNMF:
 
     def train(self, rating_matrix=None):
         if rating_matrix is None:
-            Rating().output_dataset()
+            rating_matrix = Rating().output_dataset()
         # train, test = train_test_split(rating_matrix, test_size=size, train_size=size)
         model = NMF(n_components=self.train_param.n_components,
                     init=self.train_param.init,
@@ -72,9 +72,9 @@ class SKLNMF:
 
 
 if __name__ == '__main__':
-    m = SKLNMF(train_param=NMFParam(max_iter=3000))
-    # m.train()
-    # m.save_model()
+    m = SKLNMF(train_param=NMFParam(max_iter=760))
+    m.train()
+    m.save_model()
     m.load_model()
     m.save_components()
     m.fake_load_model()

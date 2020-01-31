@@ -1,18 +1,35 @@
-import re
-
 import numpy as np
 import pandas as pd
+from sklearn.metrics.pairwise import cosine_distances
 
 from src.crawler.user_info import UserSpider
 from src.data.dataset import Rating, Movies
 from src.train.matrix_factorization import SKLNMF
 
 
+def simple_multiply(user_embedding, movie_embedding):
+    result = np.matmul(user_embedding, movie_embedding)[0]
+    indexes = result.argsort()[::-1]
+    return indexes
+
+
+def cos_distance(user_embedding, movie_embedding):
+    result = cosine_distances(user_embedding, movie_embedding.transpose())[0]
+    indexes = result.argsort()
+    return indexes
+
+
+def remove_movies(indexes, movies_to_keep):
+    indexes = [i for i in indexes if i in movies_to_keep]
+    return indexes
+
+
 class Recommendation:
     @staticmethod
-    def nmf_recommend(user_id, num_of_recommend=20, fake_load=False):
+    def nmf_recommend(user_id, num_of_recommend=20, fake_load=False, mode=0):
         """
 
+        :param mode:
         :param user_id:
         :param num_of_recommend:
         :param fake_load: server use only
@@ -32,9 +49,7 @@ class Recommendation:
 
         print(user_embedding.shape, movies_embedding.shape)
 
-        result = np.matmul(user_embedding, movies_embedding)[0]
-
-        indexes = result.argsort()[::-1]
+        indexes = Recommendation.distance(user_embedding, movies_embedding, mode=mode)
         indexes = Recommendation.remove_watched_movie(rating_matrix, indexes)
 
         if fake_load:
@@ -44,7 +59,17 @@ class Recommendation:
         else:
 
             movies = Movies.index_to_movies(indexes[:num_of_recommend])
+            # TODO: Low performance warning!!!!
+            # remove less-known movies
+            movies = movies.drop(index=Movies().output_low_num_of_rating_iu(Rating().read_rating(), 2), errors='ignore')
         return movies
+
+    @staticmethod
+    def distance(user_embedding, movie_embedding, mode=0):
+        if mode == 0:
+            return simple_multiply(user_embedding, movie_embedding)
+        if mode == 1:
+            return cos_distance(user_embedding, movie_embedding)
 
     @staticmethod
     def remove_watched_movie(rating_matrix, indexes):
@@ -61,6 +86,8 @@ class Recommendation:
         movies["RATING"] = movies["RATING"].map(map_dict)
         movies["USER_MD5"] = np.zeros(len(movies))
 
+        print(movies)
+
         movies = movies.dropna()
 
         r = Rating()
@@ -71,4 +98,4 @@ class Recommendation:
 
 if __name__ == '__main__':
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        print(Recommendation.nmf_recommend("test", 20))
+        print(Recommendation.nmf_recommend("146984937", 20))
