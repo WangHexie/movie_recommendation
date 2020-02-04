@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 from scipy.sparse import coo_matrix
+from sklearn.feature_extraction.text import CountVectorizer
 
 from src.config.configs import DataPath, TmpVarPath
 
@@ -43,10 +44,54 @@ def transform_id_to_num(data: pd.DataFrame, column_name):
     return org_to_new, new_to_org
 
 
-class Rating:
+class BaseObject:
+    def __init__(self):
+        self.id_name = None
+        self.id_dict_path = None
+        self.file_path = None
+
+    def read(self):
+        data = read_data(self.file_path)
+        return data
+
+    def transform_id_to_num(self, movies: pd.DataFrame):
+        """
+
+        :param movies:
+        :return: (original_id:new_id, new_id:original_id)
+        """
+        return transform_id_to_num(movies, self.id_name)
+
+    def get_id_dict(self):
+        # hard-code rewrite
+        if not os.path.exists(os.path.join(root_dir(), "models", *self.id_dict_path)):
+            # lack some movie data, so use rating data in temporary
+            id_dict = self.transform_id_to_num(Rating().read_rating())
+            save_tmp_data(id_dict, self.id_dict_path)
+        else:
+            id_dict = read_tmp_data(self.id_dict_path)
+
+        return id_dict
+
+    def output_low_num_of_rating_iu(self, data: pd.DataFrame, keep_threshold=2):
+        """
+
+        :param keep_threshold:
+        :param data:
+        :return: (original_id:new_id, new_id:original_id)
+        """
+        rate_count = data.groupby([self.id_name]).count()
+        # data = rate_count.sort_values(by=self.id_name, ascending=False)
+        user_to_keep = rate_count[rate_count["RATING_ID"] < keep_threshold].index.values
+        return user_to_keep
+
+
+class Rating(BaseObject):
     def __init__(self, tmp_var_path: TmpVarPath() = TmpVarPath(), data_path: DataPath() = DataPath()):
+        super().__init__()
         self.tmp_var_path = tmp_var_path
         self.data_path = data_path
+        self.file_path = data_path.rating
 
     def read_rating(self):
         rating = read_data(self.data_path.rating)
@@ -69,17 +114,14 @@ class Rating:
         :param threshold_for_dropping_users_according_to_whose_number_of_rating:
         :return:
         """
-        user_rate_count = rating.groupby("USER_MD5").count()
-        user_to_drop = user_rate_count[
-            user_rate_count[
-                "RATING_ID"] < threshold_for_dropping_users_according_to_whose_number_of_rating].index.values
+        user_to_drop = User().output_low_num_of_rating_iu(rating, threshold_for_dropping_users_according_to_whose_number_of_rating)
         rating = rating[~rating["USER_MD5"].isin(user_to_drop)]
         return rating
 
     @staticmethod
     def normalize_rating(rating):
         """
-        min max normalize now
+        min max normalize now  TODO: hard code scalar, or add base number
         :param rating:
         :return:
         """
@@ -132,43 +174,6 @@ class Rating:
         return rating_matrix
 
 
-class BaseObject:
-    def __init__(self):
-        self.id_name = None
-        self.id_dict_path = None
-
-    def transform_id_to_num(self, movies: pd.DataFrame):
-        """
-
-        :param movies:
-        :return: (original_id:new_id, new_id:original_id)
-        """
-        return transform_id_to_num(movies, self.id_name)
-
-    def get_id_dict(self):
-        # hard-code rewrite
-        if not os.path.exists(os.path.join(root_dir(), "models", *self.id_dict_path)):
-            # lack some movie data, so use rating data in temporary
-            id_dict = self.transform_id_to_num(Rating().read_rating())
-            save_tmp_data(id_dict, self.id_dict_path)
-        else:
-            id_dict = read_tmp_data(self.id_dict_path)
-
-        return id_dict
-
-    def output_low_num_of_rating_iu(self, data: pd.DataFrame, keep_threshold=2):
-        """
-
-        :param keep_threshold:
-        :param data:
-        :return: (original_id:new_id, new_id:original_id)
-        """
-        rate_count = data.groupby([self.id_name]).count()
-        # data = rate_count.sort_values(by=self.id_name, ascending=False)
-        user_to_keep = rate_count[rate_count["RATING_ID"] < keep_threshold].index.values
-        return user_to_keep
-
-
 class Movies(BaseObject):
     def __init__(self, tmp_var_path: TmpVarPath() = TmpVarPath(), data_path: DataPath() = DataPath()):
         super().__init__()
@@ -176,19 +181,48 @@ class Movies(BaseObject):
         self.data_path = data_path
         self.id_name = 'MOVIE_ID'
         self.id_dict_path = tmp_var_path.movie_id_dict
-
-    def read_movies(self):
-        return read_data(self.data_path.movies)
+        self.file_path = data_path.movies
 
     @staticmethod
     def index_to_movies(indexes):
-        movies = Movies().read_movies()
+        movies = Movies().get_movies_with_genres()
         movies = movies.set_index('MOVIE_ID')
 
         reverse_dict = Movies().get_id_dict()[1]
         indexes = [reverse_dict[i] for i in indexes]
 
         return movies.loc[indexes]
+
+    @staticmethod
+    def transform_movie_genres():
+        pass
+
+    @staticmethod
+    def get_movies_with_genres():
+        movies = Movies().read()
+        movies["GENRES"] = movies["GENRES"].map(lambda x: str(x))  # fix nan problem
+
+        cv = CountVectorizer(input='content', encoding='utf-8', decode_error='strict', strip_accents=None,
+                             lowercase=True, preprocessor=None, tokenizer=lambda x: x.split("/"), stop_words=None,
+                             token_pattern='(?u)\b\w\w+\b', ngram_range=(1, 1), analyzer='word', max_df=1.0, min_df=1,
+                             max_features=None, vocabulary=None)
+        genres = cv.fit_transform(movies["GENRES"])
+        genres = genres.todense()
+        genres_df = pd.DataFrame(genres, columns=cv.get_feature_names())
+
+        movies_long = pd.concat([movies, genres_df], axis=1)
+
+        # fix name problem
+        genres = [('紀錄片 documentary', '纪录片'), ('音樂 music', '音乐'), ('劇情 drama', '剧情'), ('動作 action', '动作'),
+                  ('兒童 kids', '儿童'), ('喜劇 comedy', '喜剧'), ('愛情 romance', '爱情'), ('懸疑 mystery', '悬疑'),
+                  ('驚悚 thriller', '惊悚'), ('comedy', '喜剧'), ('talk-show', '脱口秀'), ('reality-tv', '真人秀'),
+                  ('傳記 biography', '传记'), ('動畫 animation', '动画')]
+
+        for i in genres:
+            movies_long[i[1]] = movies_long[i[1]] + movies_long[i[0]]
+            movies_long.drop(columns=i[0], inplace=True)
+
+        return movies_long
 
 
 class User(BaseObject):
@@ -198,6 +232,7 @@ class User(BaseObject):
         self.data_path = data_path
         self.id_name = 'USER_MD5'
         self.id_dict_path = tmp_var_path.user_id_dict
+        self.file_path = data_path.users
 
 
 if __name__ == '__main__':

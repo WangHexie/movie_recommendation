@@ -61,7 +61,7 @@ class TSNEVisual:
         SHOULD （but not done）be able to return genres according to input
         :return: all movie genres
         """
-        movie_profile = Movies().read_movies()
+        movie_profile = Movies().read()
         movie_profile = movie_profile.set_index('MOVIE_ID')
 
         movies = list(Movies().get_id_dict()[0].keys())

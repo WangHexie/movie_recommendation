@@ -5,6 +5,8 @@ from sklearn.metrics.pairwise import cosine_distances
 from src.crawler.user_info import UserSpider
 from src.data.dataset import Rating, Movies
 from src.train.matrix_factorization import SKLNMF
+from sklearn.metrics import auc
+from sklearn import metrics
 
 
 def simple_multiply(user_embedding, movie_embedding):
@@ -50,7 +52,10 @@ class Recommendation:
         print(user_embedding.shape, movies_embedding.shape)
 
         indexes = Recommendation.distance(user_embedding, movies_embedding, mode=mode)
-        indexes = Recommendation.remove_watched_movie(rating_matrix, indexes)
+
+        result = np.matmul(user_embedding, movies_embedding)[0]
+
+        indexes = Recommendation.remove_watched_movie(rating_matrix, indexes, result)
 
         if fake_load:
             reverse_dict = Movies().get_id_dict()[1]
@@ -62,6 +67,7 @@ class Recommendation:
             # TODO: Low performance warning!!!!
             # remove less-known movies
             movies = movies.drop(index=Movies().output_low_num_of_rating_iu(Rating().read_rating(), 2), errors='ignore')
+
         return movies
 
     @staticmethod
@@ -72,9 +78,15 @@ class Recommendation:
             return cos_distance(user_embedding, movie_embedding)
 
     @staticmethod
-    def remove_watched_movie(rating_matrix, indexes):
-        watched = rating_matrix.nonzero()[1]
-        print([i for i in range(len(indexes)) if indexes[i] in watched])
+    def remove_watched_movie(rating_matrix, indexes, result):
+        # TODO: remove useless result parameter sometime later
+        watched = list(rating_matrix.nonzero()[1])
+        scores = rating_matrix.todense().flatten()
+        print(scores[scores>0])
+        print(scores)
+        print(scores.shape)
+        print([(i, scores[0, indexes[i]], result[indexes[i]]) for i in range(len(indexes)) if indexes[i] in watched])
+        # print("auc", auc())
         indexes = [i for i in indexes if i not in watched]
         return indexes
 
@@ -98,4 +110,4 @@ class Recommendation:
 
 if __name__ == '__main__':
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        print(Recommendation.nmf_recommend("146984937", 20))
+        print(Recommendation.nmf_recommend("test", 20))

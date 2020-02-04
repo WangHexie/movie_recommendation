@@ -50,6 +50,12 @@ class Evaluation:
 
     @staticmethod
     def model_evaluate(param: NMFParam, mode=0):
+        """
+
+        :param param:
+        :param mode: 0: ,1:
+        :return:
+        """
         train_data, test_data = Evaluation.split_train_test(Rating().read_rating())
 
         matrix = Rating.dataframe_to_sparse_matrix(train_data)
@@ -69,4 +75,4 @@ class Evaluation:
 
 
 if __name__ == '__main__':
-    print(Evaluation.model_evaluate(evaluate_config, mode=1))
+    print(Evaluation.model_evaluate(evaluate_config, mode=0))
